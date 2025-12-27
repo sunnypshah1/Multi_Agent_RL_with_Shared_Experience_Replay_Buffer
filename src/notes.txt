@@ -1,0 +1,5 @@
+In the simplest case - there can be two agents that have two actions (A&B)
+This example is called the two step game - where the two agents act in turn to gain the highest team award
+- One agent needs to corridinate with another agent to achieve the highest reward
+- The joint action with the highest reward is not a good option from the view of the first agent if it is not willing to cooperate with another agent
+- Two-Step game evaluates whether an agent has learned to cooperate by sacraficing its reward for a higher team reward
