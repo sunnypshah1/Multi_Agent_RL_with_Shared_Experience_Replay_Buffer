@@ -2,6 +2,8 @@
 #include <vector>
 #include <string>
 #include <random>
+#include <unordered_set>
+#include <cstdlib>
 
 // Create frozen lake that always has a valid path with size and hole probability paramter
 // - Initializes a grid with a sentinel value
@@ -21,8 +23,8 @@ std::vector<std::vector<char>> generateFrozenLake(int size, double hole_prob)
 
 	// Create random path for solution
 	int currRow = 0, currCol = 0;
-	std::random_device rd;
-	std::mt19937 gen(rd());
+	static std::random_device rd;
+	static std::mt19937 gen(rd());
 	std::uniform_int_distribution<> dis(0, 1);
 
 	while (currRow < goalRow || currCol < goalCol)
@@ -60,15 +62,102 @@ std::vector<std::vector<char>> generateFrozenLake(int size, double hole_prob)
 	return grid;
 }
 
-int main() 
+char generateRandomStepandValidate(std::pair<int, int> &currPos)
 {
-auto grid = generateFrozenLake(4, 0.5);
+	// Get random device and see what moves are allowed based on current position
+	static std::random_device rd;
+	static std::mt19937 gen(rd());
+	std::unordered_set<char> movesAllowed;
+	if (currPos.first > 0) movesAllowed.insert('U');
+	if (currPos.first < 3) movesAllowed.insert('D');
+	if (currPos.second > 0) movesAllowed.insert('L');
+	if (currPos.second < 3) movesAllowed.insert('R');
+
+	std::uniform_int_distribution<> dis(0, 3);
+	
+	// Keep looping until a move is generated
+	while (true) 
+	{
+		switch (dis(gen)) 
+		{
+			case 0:
+				if (movesAllowed.contains('U')) return 'U';
+				break;
+			case 1:
+				if (movesAllowed.contains('D')) return 'D';
+				break;
+			case 2:
+				if (movesAllowed.contains('L')) return 'L';
+				break;
+			case 3:
+				if (movesAllowed.contains('R')) return 'R';
+				break;
+		}
+	}
+}
+
+
+int main(int argc, char** argv) 
+{
+	// Command line args for learning rate and discount factor
+	double learningRate = std::atof(argv[0]);
+	double discountFactor = std::atof(argv[1]);
+
+	// Print grid for debugging
+	auto grid = generateFrozenLake(4, 0.5);
 	for (const auto &row : grid)
 	{
 		for (char cell : row) std::cout << cell << " ";
 		std::cout << std::endl;
 	}
 
+	// Initalize Q-Table
+	std::vector<std::vector<int>> qTable(16, std::vector<int>(4, 0));
+	//for (const auto &row : qTable)
+	//{
+	//	for (int cell : row) std::cout << cell << " ";
+	//	std::cout << std::endl;
+	//}
+	
+	std::pair<int, int> currPos = {0, 0};
+	while (true)
+	{
+		int action;
+		char move = generateRandomStepandValidate(currPos);
+		int prevRow = currPos.first, prevCol = currPos.second;
+		switch (move)
+		{
+			case 'U':
+				action = 0;
+				currPos.first--;
+				break;
+			case 'D':
+				action = 1;
+				currPos.first++;
+				break;
+			case 'L':
+				action = 2;
+				currPos.second--;
+				break;
+			case 'R':
+				action = 3;
+				currPos.second++;
+				break;
+		}
+		int newRow = currPos.first, newCol = currPos.second;
+		int prevState = prevRow * 4 + prevCol;
+		int newState = newRow * 4 + newCol;
+
+		double reward = (grid[currPos.first][currPos.second] = 'G') ? 1.0 : 0.0;
+
+		double maxNextStep;
+		if (reward == 0.0) maxNextStep = *std::max_element(qTable[newState].begin(), qTable[newState].end());
+
+		qTable[prevState][action] += learningRate * (reward + discountFactor * maxNextStep - qTable[prevState][action]);
+		
+		if (reward == 1.0) break;
+	}
+	
 	return 0;
 }
 
