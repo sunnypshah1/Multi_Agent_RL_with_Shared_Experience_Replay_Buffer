@@ -100,8 +100,8 @@ char generateRandomStepandValidate(std::pair<int, int> &currPos)
 int main(int argc, char** argv) 
 {
 	// Command line args for learning rate and discount factor
-	double learningRate = std::atof(argv[0]);
-	double discountFactor = std::atof(argv[1]);
+	double learningRate = std::atof(argv[1]);
+	double discountFactor = std::atof(argv[2]);
 
 	// Print grid for debugging
 	auto grid = generateFrozenLake(4, 0.5);
@@ -112,7 +112,7 @@ int main(int argc, char** argv)
 	}
 
 	// Initalize Q-Table
-	std::vector<std::vector<int>> qTable(16, std::vector<int>(4, 0));
+	std::vector<std::vector<double>> qTable(16, std::vector<double>(4, 0.0));
 	//for (const auto &row : qTable)
 	//{
 	//	for (int cell : row) std::cout << cell << " ";
@@ -120,7 +120,10 @@ int main(int argc, char** argv)
 	//}
 	
 	std::pair<int, int> currPos = {0, 0};
-	while (true)
+	int steps = 0;
+	const int MAX_STEPS = 100;
+
+	while (steps++ < MAX_STEPS)
 	{
 		int action;
 		char move = generateRandomStepandValidate(currPos);
@@ -148,14 +151,14 @@ int main(int argc, char** argv)
 		int prevState = prevRow * 4 + prevCol;
 		int newState = newRow * 4 + newCol;
 
-		double reward = (grid[currPos.first][currPos.second] = 'G') ? 1.0 : 0.0;
+		double reward = (grid[currPos.first][currPos.second] == 'G') ? 1.0 : 0.0;
 
-		double maxNextStep;
+		double maxNextStep = 0.0;
 		if (reward == 0.0) maxNextStep = *std::max_element(qTable[newState].begin(), qTable[newState].end());
 
 		qTable[prevState][action] += learningRate * (reward + discountFactor * maxNextStep - qTable[prevState][action]);
 		
-		if (reward == 1.0) break;
+		if (reward == 1.0 || grid[newRow][newCol] == 'H') break;
 	}
 	
 	return 0;
